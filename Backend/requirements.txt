@@ -7,3 +7,8 @@ crewai
 fastapi
 uvicorn
 beautifulsoup4
+requests
+pymupdf
+pypdf
+langchain_community
+grobid-client
