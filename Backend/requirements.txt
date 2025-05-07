@@ -1,0 +1,9 @@
+python-dotenv
+google-generativeai
+langchain-google-genai
+langchain
+crewai
+
+fastapi
+uvicorn
+beautifulsoup4
