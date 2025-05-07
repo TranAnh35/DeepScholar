@@ -30,34 +30,65 @@ LOG_LEVEL = getattr(logging, LOG_LEVEL_STR, logging.INFO)
 LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(module)s:%(funcName)s:%(lineno)d - %(message)s"
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
-# Tạo formatter
-formatter = logging.Formatter(LOG_FORMAT, datefmt=DATE_FORMAT)
+# Biến để kiểm tra xem logging đã được cấu hình chưa
+_logging_configured = False
 
-# Lấy root logger
-logger = logging.getLogger() # Lấy root logger
-logger.setLevel(LOG_LEVEL) # Đặt level cho root logger
+# Thêm hàm configure_logging để main.py có thể gọi
+def configure_logging():
+    """
+    Cấu hình logging cho toàn bộ ứng dụng.
+    Hàm này chỉ thực sự cấu hình logging lần đầu tiên được gọi.
+    Các lần gọi tiếp theo sẽ không thực hiện lại việc cấu hình.
+    
+    Returns:
+        logging.Logger: Root logger đã được cấu hình
+    """
+    global _logging_configured
+    
+    # Nếu logging đã được cấu hình trước đó, trả về ngay
+    if _logging_configured:
+        return logging.getLogger()
+        
+    # Tạo formatter
+    formatter = logging.Formatter(LOG_FORMAT, datefmt=DATE_FORMAT)
 
-# --- Console Handler ---
-console_handler = logging.StreamHandler(sys.stdout)
-console_handler.setFormatter(formatter)
-console_handler.setLevel(LOG_LEVEL) # Có thể đặt level khác cho từng handler
-logger.addHandler(console_handler)
+    # Lấy root logger
+    logger = logging.getLogger() # Lấy root logger
+    logger.setLevel(LOG_LEVEL) # Đặt level cho root logger
 
-# --- File Handler (Optional) ---
-if LOG_TO_FILE:
-    # RotatingFileHandler để giới hạn kích thước file log và số lượng file backup
-    file_handler = RotatingFileHandler(
-        LOG_FILE_PATH,
-        maxBytes=10*1024*1024,  # 10 MB
-        backupCount=5,          # Giữ 5 file backup
-        encoding='utf-8'
-    )
-    file_handler.setFormatter(formatter)
-    file_handler.setLevel(LOG_LEVEL) # Có thể đặt level khác
-    logger.addHandler(file_handler)
-    logger.info(f"Logging to file: {LOG_FILE_PATH}")
-else:
-    logger.info("Logging to console only. File logging is disabled.")
+    # Xóa các handler hiện có (để tránh lặp lại khi configure_logging được gọi nhiều lần)
+    for handler in logger.handlers[:]:
+        logger.removeHandler(handler)
+
+    # --- Console Handler ---
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(formatter)
+    console_handler.setLevel(LOG_LEVEL) # Có thể đặt level khác cho từng handler
+    logger.addHandler(console_handler)
+
+    # --- File Handler (Optional) ---
+    if LOG_TO_FILE:
+        # RotatingFileHandler để giới hạn kích thước file log và số lượng file backup
+        file_handler = RotatingFileHandler(
+            LOG_FILE_PATH,
+            maxBytes=10*1024*1024,  # 10 MB
+            backupCount=5,          # Giữ 5 file backup
+            encoding='utf-8'
+        )
+        file_handler.setFormatter(formatter)
+        file_handler.setLevel(LOG_LEVEL) # Có thể đặt level khác
+        logger.addHandler(file_handler)
+        logger.info(f"Logging to file: {LOG_FILE_PATH}")
+    else:
+        logger.info("Logging to console only. File logging is disabled.")
+    
+    # Log thông báo cấu hình
+    logger.info("Logging system configured")
+    
+    # Đánh dấu logging đã được cấu hình
+    _logging_configured = True
+    
+    return logger
 
 
 # Hàm để lấy logger cho các module khác
